@@ -1,6 +1,6 @@
 [package]
 name = "restaurant-stock"
-version = "1.0.0"
+version = "1.0.1"
 description = "Sistema de Gestión de Inventario para Restaurantes"
 edition = "2021"
 

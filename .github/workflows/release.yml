@@ -39,6 +39,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://sgzzllthfqmaxcejecws.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_j8mMyDU38rbE7F34vsUdTg_w54sOP-Z' }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'RestaurantStock ${{ github.ref_name }}'
