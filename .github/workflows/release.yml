@@ -1,0 +1,48 @@
+name: 'Compilar y Publicar Versión de RestaurantStock'
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar Rust estable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalar dependencias del frontend
+        run: npm install
+
+      - name: Compilar frontend y aplicación Tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'RestaurantStock ${{ github.ref_name }}'
+          releaseBody: 'Actualización automática de RestaurantStock con mejoras de interfaz, reportes y correcciones.'
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
