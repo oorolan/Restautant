@@ -224,25 +224,41 @@
 
   function exportarKardex() {
     exportToExcel({
-      reportTitle: 'Kardex de Movimientos de Inventario',
+      reportTitle: 'Kardex de Movimientos de Inventario (Entradas y Salidas)',
       sheetName: 'Kardex',
       fileNamePrefix: 'Kardex_Movimientos',
       columns: [
-        { header: 'ID', key: 'id' },
-        { header: 'Fecha y Hora', key: 'fecha', format: (v) => v ? new Date(v).toLocaleString('es-ES') : '' },
-        { header: 'Insumo', key: 'insumos.nombre', format: (v, k) => v || `Insumo #${k.insumo_id}` },
+        { header: '#', key: '#' },
+        { 
+          header: 'Fecha y Hora', 
+          key: 'fecha', 
+          format: (v) => v ? new Date(v).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '' 
+        },
+        { header: 'Insumo / Producto', key: 'insumos.nombre', format: (v, k) => v || `Insumo #${k.insumo_id}` },
         { header: 'Unidad', key: 'insumos.unidad', format: (v) => v || '' },
-        { header: 'Tipo Movimiento', key: 'tipo', format: (v) => String(v || '').toUpperCase() },
-        { header: 'Cantidad', key: 'cantidad', format: (v) => Number(v || 0).toFixed(2) },
-        { header: 'Saldo Resultante', key: 'saldo', format: (v) => Number(v || 0).toFixed(2) },
-        { header: 'Referencia / Detalle', key: 'referencia', format: (v) => v || '' },
-        { header: 'Usuario Responsable', key: 'usuarios.nombre', format: (v) => v || 'Sistema' }
+        { header: 'Motivo / Referencia', key: 'referencia', format: (v) => v || 'Movimiento directo' },
+        { 
+          header: 'ENTRADA (+)', 
+          key: 'cantidad', 
+          format: (v, k) => k.tipo === 'entrada' ? `+${Number(v || 0).toFixed(2)}` : '—' 
+        },
+        { 
+          header: 'SALIDA (-)', 
+          key: 'cantidad', 
+          format: (v, k) => k.tipo === 'salida' ? `-${Number(v || 0).toFixed(2)}` : '—' 
+        },
+        { 
+          header: 'SALDO STOCK', 
+          key: 'saldo', 
+          format: (v) => Number(v || 0).toFixed(2) 
+        },
+        { header: 'Responsable', key: 'usuarios.nombre', format: (v) => v || 'Sistema' }
       ],
       data: filteredKardex,
       summaryCards: [
         { label: 'Movimientos Filtrados', value: filteredKardex.length },
-        { label: 'Total Entradas', value: Number(kardexEntradas).toFixed(2) },
-        { label: 'Total Salidas', value: Number(kardexSalidas).toFixed(2) }
+        { label: 'Total Entradas', value: `+${Number(kardexEntradas).toFixed(2)}` },
+        { label: 'Total Salidas', value: `-${Number(kardexSalidas).toFixed(2)}` }
       ]
     });
     notify('success', 'Kardex exportado a Excel (.xlsx)');
@@ -710,32 +726,58 @@
         </div>
 
         <div class="table-wrapper">
-          <table>
+          <table class="kardex-table">
             <thead>
               <tr>
-                <th>Fecha y Hora</th>
-                <th>Insumo</th>
-                <th>Tipo</th>
-                <th>Cantidad</th>
-                <th>Saldo</th>
+                <th style="width: 150px;">Fecha y Hora</th>
+                <th>Insumo / Producto</th>
                 <th>Referencia / Motivo</th>
-                <th>Usuario</th>
+                <th style="text-align: right; width: 130px; color: var(--success);">📥 Entrada (+)</th>
+                <th style="text-align: right; width: 130px; color: var(--danger);">📤 Salida (-)</th>
+                <th style="text-align: right; width: 120px;">Saldo Final</th>
+                <th style="width: 130px;">Responsable</th>
               </tr>
             </thead>
             <tbody>
               {#each filteredKardex as k (k.id)}
                 <tr>
-                  <td class="text-sm">{k.fecha ? new Date(k.fecha).toLocaleString() : '—'}</td>
-                  <td><strong>{k.insumos?.nombre ?? `Insumo #${k.insumo_id}`}</strong></td>
+                  <td class="text-sm font-mono whitespace-nowrap">
+                    {k.fecha ? new Date(k.fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                  </td>
                   <td>
-                    <span class="badge {k.tipo === 'entrada' ? 'badge-success' : 'badge-danger'}">
-                      {k.tipo === 'entrada' ? 'Entrada' : 'Salida'}
+                    <div class="font-medium text-sm">{k.insumos?.nombre ?? `Insumo #${k.insumo_id}`}</div>
+                    <div class="text-muted text-xs">Unidad: {k.insumos?.unidad ?? 'u'}</div>
+                  </td>
+                  <td class="text-sm text-muted">{k.referencia || '—'}</td>
+                  <!-- ENTRADA -->
+                  <td style="text-align: right;">
+                    {#if k.tipo === 'entrada'}
+                      <span class="badge badge-success font-mono font-bold">
+                        +{Number(k.cantidad).toFixed(2)}
+                      </span>
+                    {:else}
+                      <span class="text-muted text-xs">—</span>
+                    {/if}
+                  </td>
+                  <!-- SALIDA -->
+                  <td style="text-align: right;">
+                    {#if k.tipo === 'salida'}
+                      <span class="badge badge-danger font-mono font-bold">
+                        -{Number(k.cantidad).toFixed(2)}
+                      </span>
+                    {:else}
+                      <span class="text-muted text-xs">—</span>
+                    {/if}
+                  </td>
+                  <!-- SALDO RESULTANTE -->
+                  <td style="text-align: right;">
+                    <span class="font-semibold text-sm">
+                      {Number(k.saldo).toFixed(2)} <span class="text-muted text-xs">{k.insumos?.unidad ?? ''}</span>
                     </span>
                   </td>
-                  <td><strong>{k.cantidad}</strong> <span class="text-xs text-muted">{k.insumos?.unidad ?? ''}</span></td>
-                  <td><strong>{k.saldo}</strong></td>
-                  <td class="text-sm text-muted">{k.referencia || '—'}</td>
-                  <td class="text-sm">{k.usuarios?.nombre ?? 'Sistema'}</td>
+                  <td class="text-sm">
+                    <span class="badge badge-neutral">{k.usuarios?.nombre ?? 'Sistema'}</span>
+                  </td>
                 </tr>
               {/each}
             </tbody>

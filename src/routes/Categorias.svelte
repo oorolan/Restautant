@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { isAdmin, notify } from '../lib/stores/session';
+  import { isJefeAlmacen, notify } from '../lib/stores/session';
   import { getCategorias, createCategoria, updateCategoria, deleteCategoria, type Categoria } from '../lib/api/categorias';
   import { exportToExcel } from '../lib/utils/excel';
 
@@ -119,7 +119,7 @@
           </svg>
           <span>Exportar Excel</span>
         </button>
-        {#if $isAdmin}
+        {#if $isJefeAlmacen}
           <button id="btn-nueva-categoria" class="btn btn-primary" on:click={openCreate}>
             + Nueva Categoría
           </button>
@@ -164,7 +164,7 @@
         <div class="empty-state-text">
           {search ? 'Prueba con otro término' : 'Crea categorías para organizar tus insumos y filtrar reportes con facilidad.'}
         </div>
-        {#if !search && $isAdmin}
+        {#if !search && $isJefeAlmacen}
           <button class="btn btn-primary" style="margin-top:16px;" on:click={openCreate}>
             + Crear primera categoría
           </button>
@@ -178,7 +178,7 @@
               <th style="width: 80px;">ID</th>
               <th>Nombre de Categoría</th>
               <th>Descripción</th>
-              {#if $isAdmin}<th style="width: 150px;">Acciones</th>{/if}
+              {#if $isJefeAlmacen}<th style="width: 150px;">Acciones</th>{/if}
             </tr>
           </thead>
           <tbody>
@@ -191,7 +191,7 @@
                 <td class="text-sm text-muted">
                   {c.descripcion || 'Sin descripción'}
                 </td>
-                {#if $isAdmin}
+                {#if $isJefeAlmacen}
                   <td>
                     <div class="flex gap-2">
                       <button

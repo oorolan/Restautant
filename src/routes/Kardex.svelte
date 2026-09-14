@@ -49,7 +49,7 @@
     const insumoSeleccionado = insumos.find(i => String(i.id) === filterInsumo);
     const titulo = insumoSeleccionado 
       ? `Historial Kardex - Insumo: ${insumoSeleccionado.nombre}`
-      : 'Historial General de Movimientos Kardex';
+      : 'Historial General de Movimientos Kardex (Entradas y Salidas)';
 
     exportToExcel({
       reportTitle: titulo,
@@ -60,32 +60,33 @@
         { 
           header: 'Fecha y Hora', 
           key: 'fecha', 
-          format: (v) => v ? new Date(v).toLocaleString('es-ES') : '' 
+          format: (v) => v ? new Date(v).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '' 
         },
-        { header: 'Insumo', key: 'insumos.nombre', format: (v) => v || 'Insumo' },
+        { header: 'Insumo / Producto', key: 'insumos.nombre', format: (v) => v || 'Insumo' },
+        { header: 'Unidad', key: 'insumos.unidad', format: (v) => v || '' },
+        { header: 'Motivo / Referencia', key: 'referencia', format: (v) => v || 'Movimiento directo' },
         { 
-          header: 'Tipo', 
-          key: 'tipo', 
-          format: (v) => v === 'entrada' ? 'ENTRADA (+)' : 'SALIDA (-)' 
-        },
-        { 
-          header: 'Cantidad', 
+          header: 'ENTRADA (+)', 
           key: 'cantidad', 
-          format: (v, item) => `${item.tipo === 'salida' ? '-' : '+'}${Number(v || 0).toFixed(2)} ${item.insumos?.unidad || ''}` 
+          format: (v, item) => item.tipo === 'entrada' ? `+${Number(v || 0).toFixed(2)}` : '—' 
         },
         { 
-          header: 'Saldo Resultante', 
-          key: 'saldo', 
-          format: (v, item) => `${Number(v || 0).toFixed(2)} ${item.insumos?.unidad || ''}` 
+          header: 'SALIDA (-)', 
+          key: 'cantidad', 
+          format: (v, item) => item.tipo === 'salida' ? `-${Number(v || 0).toFixed(2)}` : '—' 
         },
-        { header: 'Referencia / Detalle', key: 'referencia', format: (v) => v || 'Sin detalle' },
-        { header: 'Registrado Por', key: 'usuarios.nombre', format: (v) => v || 'Sistema' }
+        { 
+          header: 'SALDO STOCK', 
+          key: 'saldo', 
+          format: (v) => Number(v || 0).toFixed(2) 
+        },
+        { header: 'Responsable', key: 'usuarios.nombre', format: (v) => v || 'Sistema' }
       ],
       data: entries,
       summaryCards: [
         { label: 'Total Movimientos', value: entries.length },
-        { label: 'Total Entradas', value: entradas },
-        { label: 'Total Salidas', value: salidas }
+        { label: 'Entradas Registradas', value: entradas },
+        { label: 'Salidas Registradas', value: salidas }
       ]
     });
     notify('success', 'Kardex exportado a Excel exitosamente');
@@ -96,8 +97,8 @@
   <div class="page-header">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="page-title">Kardex</h1>
-        <p class="page-subtitle">Historial de movimientos y auditoría de inventario</p>
+        <h1 class="page-title">Kardex de Inventario</h1>
+        <p class="page-subtitle">Registro cronológico detallado de entradas, salidas y saldos de insumos</p>
       </div>
       <button id="btn-exportar-kardex-excel" class="btn btn-excel" on:click={handleExportExcel} title="Exportar movimientos a Microsoft Excel (.xlsx)">
         <svg viewBox="0 0 24 24" width="18" height="18">
@@ -118,13 +119,13 @@
       </div>
       <div class="stat-card">
         <div class="stat-body">
-          <div class="stat-value" style="color: var(--success);">{entradas}</div>
+          <div class="stat-value text-success">{entradas}</div>
           <div class="stat-label">Entradas registradas</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-body">
-          <div class="stat-value" style="color: var(--danger);">{salidas}</div>
+          <div class="stat-value text-danger">{salidas}</div>
           <div class="stat-label">Salidas registradas</div>
         </div>
       </div>
@@ -133,7 +134,7 @@
     <!-- Filters -->
     <div class="toolbar">
       <div class="toolbar-left" style="flex-wrap: wrap; gap: 12px;">
-        <select id="filter-kardex-insumo" class="form-control" style="width: 200px;" bind:value={filterInsumo}>
+        <select id="filter-kardex-insumo" class="form-control" style="width: 220px;" bind:value={filterInsumo}>
           <option value="">Todos los insumos</option>
           {#each insumos as i}
             <option value={String(i.id)}>{i.nombre}</option>
@@ -157,43 +158,67 @@
     {:else if entries.length === 0}
       <div class="empty-state">
         <div class="empty-state-icon">📊</div>
-        <div class="empty-state-title">Sin movimientos</div>
-        <div class="empty-state-text">No hay registros para los filtros seleccionados.</div>
+        <div class="empty-state-title">Sin movimientos registrados</div>
+        <div class="empty-state-text">No hay movimientos que coincidan con los filtros seleccionados.</div>
       </div>
     {:else}
       <div class="table-wrapper">
-        <table>
+        <table class="kardex-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Fecha</th>
-              <th>Insumo</th>
-              <th>Tipo</th>
-              <th>Cantidad</th>
-              <th>Saldo</th>
-              <th>Referencia</th>
-              <th>Usuario</th>
+              <th style="width: 60px; text-align: center;">#</th>
+              <th style="width: 150px;">Fecha y Hora</th>
+              <th>Insumo / Producto</th>
+              <th>Motivo / Referencia</th>
+              <th style="text-align: right; width: 130px; color: var(--success);">📥 Entrada (+)</th>
+              <th style="text-align: right; width: 130px; color: var(--danger);">📤 Salida (-)</th>
+              <th style="text-align: right; width: 120px;">Saldo Final</th>
+              <th style="width: 130px;">Responsable</th>
             </tr>
           </thead>
           <tbody>
-            {#each entries as e (e.id)}
+            {#each entries as e, idx (e.id)}
               <tr>
-                <td class="text-muted text-xs">#{e.id}</td>
-                <td class="text-sm">{new Date(e.fecha).toLocaleString('es-PE')}</td>
-                <td>{e.insumos?.nombre ?? '—'} <span class="text-muted text-xs">({e.insumos?.unidad})</span></td>
+                <td class="text-muted text-xs text-center font-mono">#{e.id}</td>
+                <td class="text-sm font-mono whitespace-nowrap">
+                  {new Date(e.fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </td>
                 <td>
+                  <div class="font-medium text-sm">{e.insumos?.nombre ?? '—'}</div>
+                  <div class="text-muted text-xs">Unidad: {e.insumos?.unidad ?? 'u'}</div>
+                </td>
+                <td class="text-sm text-muted">
+                  {e.referencia || '—'}
+                </td>
+                <!-- ENTRADA -->
+                <td style="text-align: right;">
                   {#if e.tipo === 'entrada'}
-                    <span class="badge badge-success">📥 Entrada</span>
+                    <span class="kardex-qty-badge entry">
+                      +{Number(e.cantidad).toFixed(2)}
+                    </span>
                   {:else}
-                    <span class="badge badge-danger">📤 Salida</span>
+                    <span class="text-muted text-xs">—</span>
                   {/if}
                 </td>
-                <td class:text-success={e.tipo === 'entrada'} class:text-danger={e.tipo === 'salida'}>
-                  {e.tipo === 'entrada' ? '+' : '-'}{e.cantidad}
+                <!-- SALIDA -->
+                <td style="text-align: right;">
+                  {#if e.tipo === 'salida'}
+                    <span class="kardex-qty-badge exit">
+                      -{Number(e.cantidad).toFixed(2)}
+                    </span>
+                  {:else}
+                    <span class="text-muted text-xs">—</span>
+                  {/if}
                 </td>
-                <td class="font-semibold">{e.saldo}</td>
-                <td class="text-sm text-muted">{e.referencia ?? '—'}</td>
-                <td class="text-sm">{e.usuarios?.nombre ?? '—'}</td>
+                <!-- SALDO RESULTANTE -->
+                <td style="text-align: right;">
+                  <span class="kardex-balance font-semibold">
+                    {Number(e.saldo).toFixed(2)} <span class="text-muted text-xs">{e.insumos?.unidad ?? ''}</span>
+                  </span>
+                </td>
+                <td class="text-sm">
+                  <span class="user-pill">{e.usuarios?.nombre ?? 'Sistema'}</span>
+                </td>
               </tr>
             {/each}
           </tbody>
@@ -204,6 +229,50 @@
 </div>
 
 <style>
-  .text-success { color: var(--success); }
-  .text-danger  { color: var(--danger); }
+  .kardex-table th {
+    white-space: nowrap;
+    padding: 12px 14px;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+  }
+  .kardex-table td {
+    padding: 12px 14px;
+    vertical-align: middle;
+  }
+  .kardex-qty-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-family: monospace;
+    letter-spacing: 0.02em;
+  }
+  .kardex-qty-badge.entry {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+  .kardex-qty-badge.exit {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+  }
+  .kardex-balance {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+  .user-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--bg-surface-alt);
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .whitespace-nowrap {
+    white-space: nowrap;
+  }
 </style>
+

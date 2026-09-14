@@ -23,7 +23,7 @@
     { id: 'ordenes',       label: 'Órdenes',          icon: 'ordenes',       section: 'Principal', jefeOnly: true },
     { id: 'recepciones',   label: 'Recepción',        icon: 'recepciones',   section: 'Principal', jefeOnly: true },
     { id: 'proveedores',   label: 'Proveedores',      icon: 'proveedores',   section: 'Gestión',   jefeOnly: true },
-    { id: 'categorias',    label: 'Categorías',       icon: 'categorias',    section: 'Gestión',   adminOnly: true },
+    { id: 'categorias',    label: 'Categorías',       icon: 'categorias',    section: 'Gestión',   jefeOnly: true },
     { id: 'reportes',      label: 'Reportes',         icon: 'reportes',      section: 'Gestión',   jefeOnly: true },
     { id: 'usuarios',      label: 'Usuarios',         icon: 'usuarios',      section: 'Sistema',   adminOnly: true },
     { id: 'configuracion', label: 'Configuración',    icon: 'configuracion', section: 'Sistema',   adminOnly: true },
