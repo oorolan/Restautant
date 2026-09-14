@@ -6,6 +6,7 @@
 
   let form: ConfiguracionRestaurante = { ...CONFIG_DEFAULT };
   let isSaving = false;
+  let formInitialized = false;
 
   // SVG Icons (Heroicons 24px outline)
   const icons = {
@@ -17,12 +18,13 @@
   };
 
   onMount(() => {
-    // Sincronizar formulario con el store
+    // Sincronizar formulario con el store solo en el primer cargado
     form = { ...$configuracion };
+    formInitialized = true;
   });
 
-  $: if ($configuracion) {
-    // Si cambia externamente, sincronizar
+  // Solo sincronizar si cambia desde afuera Y el form aún no fue inicializado
+  $: if (!formInitialized && $configuracion) {
     form = { ...$configuracion };
   }
 
